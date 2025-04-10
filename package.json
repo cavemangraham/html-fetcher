@@ -1,7 +1,12 @@
 {
   "name": "html-fetcher",
   "version": "1.0.0",
+  "description": "Netlify function to fetch and analyze website scripts",
+  "main": "fetch-html.js",
+  "type": "commonjs",
   "dependencies": {
+    "jsdom": "^24.0.0",
     "node-fetch": "^2.6.7"
   }
 }
+
