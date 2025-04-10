@@ -20,7 +20,7 @@ exports.handler = async function (event, context) {
     console.log('HEAD SECTION:\n', headHtml);
 
     // Extract favicon
-    let faviconMatch = html.match(/<link[^>]+rel=["'](?:shortcut )?icon["'][^>]*href=["']([^"']+)["']/i);
+    const faviconMatch = html.match(/<link[^>]+rel=["'](?:shortcut\s+)?icon["'][^>]*href=["']([^"']+)["']/i);
     const faviconLink = faviconMatch ? new URL(faviconMatch[1], url).href : null;
 
     // Extract inline script contents
