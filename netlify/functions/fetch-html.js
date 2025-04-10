@@ -19,23 +19,40 @@ exports.handler = async function (event, context) {
     const headHtml = headMatch ? headMatch[0] : 'No <head> section found';
     console.log('HEAD SECTION:\n', headHtml);
 
-    // Extract script src URLs with regex
-    const scriptRegex = /<script[^>]+src=["']([^"']+)["']/gi;
-    const matches = [...html.matchAll(scriptRegex)];
-    const scriptSrcs = matches.map(m => m[1].toLowerCase());
+    // Regex to find all <script>...</script> tags
+    const scriptTagRegex = /<script[^>]*>([\s\S]*?)<\/script>/gi;
+    const scriptContents = [...html.matchAll(scriptTagRegex)].map(m => m[1].toLowerCase());
 
-    // Log each script src
+    // Also extract script srcs for good measure
+    const srcRegex = /<script[^>]+src=["']([^"']+)["']/gi;
+    const scriptSrcs = [...html.matchAll(srcRegex)].map(m => m[1].toLowerCase());
+
     console.log('SCRIPT SOURCES FOUND:');
     scriptSrcs.forEach(src => console.log('→', src));
+
+    console.log('INLINE SCRIPT SNIPPETS FOUND:');
+    scriptContents.forEach((code, i) => console.log(`Script ${i + 1}:\n`, code.slice(0, 300))); // Trim long output
 
     const keywords = ['rb2b', 'warmly', 'vector', 'lfeeder', 'leadfeeder'];
     let webIdDetected = null;
 
-    for (const src of scriptSrcs) {
-      const match = keywords.find(word => src.includes(word));
+    // Check inline scripts
+    for (const code of scriptContents) {
+      const match = keywords.find(word => code.includes(word));
       if (match) {
-        webIdDetected = match === 'lfeeder' || match === 'leadfeeder' ? 'leadfeeder' : match;
+        webIdDetected = (match === 'lfeeder' || match === 'leadfeeder') ? 'leadfeeder' : match;
         break;
+      }
+    }
+
+    // If not found in inline, check script srcs
+    if (!webIdDetected) {
+      for (const src of scriptSrcs) {
+        const match = keywords.find(word => src.includes(word));
+        if (match) {
+          webIdDetected = (match === 'lfeeder' || match === 'leadfeeder') ? 'leadfeeder' : match;
+          break;
+        }
       }
     }
 
