@@ -20,8 +20,14 @@ exports.handler = async function (event, context) {
     console.log('HEAD SECTION:\n', headHtml);
 
     // Extract favicon
-    const faviconMatch = html.match(/<link[^>]+rel=["'](?:shortcut\s+)?icon["'][^>]*href=["']([^"']+)["']/i);
-    const faviconLink = faviconMatch ? new URL(faviconMatch[1], url).href : null;
+    let faviconLink = null;
+
+    const faviconMatch = html.match(/<link[^>]+(?:rel=["'](?:shortcut\s+)?icon["'])[^>]*href=["']([^"']+)["']/i)
+      || html.match(/<link[^>]+href=["']([^"']+)["'][^>]*rel=["'](?:shortcut\s+)?icon["']/i);
+
+    if (faviconMatch) {
+      faviconLink = new URL(faviconMatch[1], url).href;
+    }
 
     // Extract inline script contents
     const scriptTagRegex = /<script[^>]*>([\s\S]*?)<\/script>/gi;
@@ -69,46 +75,12 @@ exports.handler = async function (event, context) {
       }
     }
 
-    // Try to find main background color
-    let mainColor = null;
-
-    // Inline style in body
-    const bodyTagMatch = html.match(/<body[^>]*style=["'][^"']*background[^"']*["']/i);
-    if (bodyTagMatch) {
-      const bgColorMatch = bodyTagMatch[0].match(/background(-color)?:\s*([^;"']+)/i);
-      if (bgColorMatch) {
-        mainColor = bgColorMatch[2].trim();
-      }
-    }
-
-    // If still not found, try basic CSS detection from <style> tags
-    if (!mainColor) {
-      const styleTags = [...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi)].map(m => m[1]);
-      for (const css of styleTags) {
-        const bodyBgMatch = css.match(/body\s*{[^}]*background(-color)?:\s*([^;}]+)[;}]/i);
-        if (bodyBgMatch) {
-          mainColor = bodyBgMatch[2].trim();
-          break;
-        }
-      }
-    }
-
-    // Normalize if color is in rgb(...) or named
-    if (mainColor && mainColor.startsWith('rgb')) {
-      const rgb = mainColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-      if (rgb) {
-        const [r, g, b] = rgb.slice(1).map(Number);
-        mainColor = '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
-      }
-    }
-
     return {
       statusCode: 200,
       body: JSON.stringify({
         web_id_found: !!webIdDetected,
         web_id_detected: webIdDetected,
         favicon_link: faviconLink,
-        main_color: mainColor,
       }),
     };
   } catch (error) {
