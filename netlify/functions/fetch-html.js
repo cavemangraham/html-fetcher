@@ -21,10 +21,9 @@ exports.handler = async function (event, context) {
 
     // Extract favicon
     let faviconLink = null;
-
-    const faviconMatch = html.match(/<link[^>]+(?:rel=["'](?:shortcut\s+)?icon["'])[^>]*href=["']([^"']+)["']/i)
-      || html.match(/<link[^>]+href=["']([^"']+)["'][^>]*rel=["'](?:shortcut\s+)?icon["']/i);
-
+    const faviconMatch =
+      html.match(/<link[^>]+(?:rel=["'](?:shortcut\s+)?icon["'])[^>]*href=["']([^"']+)["']/i) ||
+      html.match(/<link[^>]+href=["']([^"']+)["'][^>]*rel=["'](?:shortcut\s+)?icon["']/i);
     if (faviconMatch) {
       faviconLink = new URL(faviconMatch[1], url).href;
     }
@@ -53,10 +52,28 @@ exports.handler = async function (event, context) {
       leadfeeder: 'leadfeeder',
     };
 
-    let webIdDetected = null;
+    const chatKeywords = [
+      'livechatinc',
+      'zdassets',
+      'driftt',
+      'salesiq',
+      'tidio',
+      'olark',
+      'crisp',
+      'intercom',
+      'tawk',
+      'hs-scripts',
+      '@n8n/chat',
+      'hubspotconversations'
+    ];
 
-    // Check inline scripts
-    for (const code of scriptContents) {
+    let webIdDetected = null;
+    let chatWidgetDetected = null;
+
+    const allCode = [...scriptContents, ...scriptSrcs];
+
+    // Detect web ID tool
+    for (const code of allCode) {
       const match = Object.keys(keywordMap).find(word => code.includes(word));
       if (match) {
         webIdDetected = keywordMap[match];
@@ -64,14 +81,12 @@ exports.handler = async function (event, context) {
       }
     }
 
-    // If not found in inline, check src URLs
-    if (!webIdDetected) {
-      for (const src of scriptSrcs) {
-        const match = Object.keys(keywordMap).find(word => src.includes(word));
-        if (match) {
-          webIdDetected = keywordMap[match];
-          break;
-        }
+    // Detect chat widget
+    for (const code of allCode) {
+      const match = chatKeywords.find(word => code.includes(word));
+      if (match) {
+        chatWidgetDetected = match;
+        break;
       }
     }
 
@@ -81,6 +96,8 @@ exports.handler = async function (event, context) {
         web_id_found: !!webIdDetected,
         web_id_detected: webIdDetected,
         favicon_link: faviconLink,
+        has_chat_widget: !!chatWidgetDetected,
+        chat_widget_detected: chatWidgetDetected,
       }),
     };
   } catch (error) {
