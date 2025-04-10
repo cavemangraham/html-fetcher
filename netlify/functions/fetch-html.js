@@ -14,10 +14,19 @@ exports.handler = async function (event, context) {
     const res = await fetch(url);
     const html = await res.text();
 
-    // Regex to find all <script src="..."> tags and extract the URLs
+    // Log full <head> section
+    const headMatch = html.match(/<head[^>]*>([\\s\\S]*?)<\\/head>/i);
+    const headHtml = headMatch ? headMatch[0] : 'No <head> section found';
+    console.log('HEAD SECTION:\\n', headHtml);
+
+    // Extract script src URLs with regex
     const scriptRegex = /<script[^>]+src=["']([^"']+)["']/gi;
     const matches = [...html.matchAll(scriptRegex)];
     const scriptSrcs = matches.map(m => m[1].toLowerCase());
+
+    // Log each script src
+    console.log('SCRIPT SOURCES FOUND:');
+    scriptSrcs.forEach(src => console.log('→', src));
 
     const keywords = ['rb2b', 'warmly', 'vector', 'lfeeder', 'leadfeeder'];
     let webIdDetected = null;
@@ -38,6 +47,7 @@ exports.handler = async function (event, context) {
       }),
     };
   } catch (error) {
+    console.error('ERROR:', error);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: `Error fetching URL: ${error.message}` }),
