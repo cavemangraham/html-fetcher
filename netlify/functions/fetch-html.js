@@ -1,5 +1,4 @@
 const fetch = require('node-fetch');
-const { JSDOM } = require('jsdom');
 
 exports.handler = async function (event, context) {
   const url = event.queryStringParameters.url;
@@ -15,22 +14,18 @@ exports.handler = async function (event, context) {
     const res = await fetch(url);
     const html = await res.text();
 
-    const dom = new JSDOM(html);
-    const scripts = [...dom.window.document.querySelectorAll('script[src]')];
-    const scriptSrcs = scripts.map(script => script.src);
+    // Regex to find all <script src="..."> tags and extract the URLs
+    const scriptRegex = /<script[^>]+src=["']([^"']+)["']/gi;
+    const matches = [...html.matchAll(scriptRegex)];
+    const scriptSrcs = matches.map(m => m[1].toLowerCase());
 
     const keywords = ['rb2b', 'warmly', 'vector', 'lfeeder', 'leadfeeder'];
     let webIdDetected = null;
 
     for (const src of scriptSrcs) {
-      const matchedKeyword = keywords.find(word =>
-        src.toLowerCase().includes(word)
-      );
-      if (matchedKeyword) {
-        webIdDetected =
-          matchedKeyword === 'lfeeder' || matchedKeyword === 'leadfeeder'
-            ? 'leadfeeder'
-            : matchedKeyword;
+      const match = keywords.find(word => src.includes(word));
+      if (match) {
+        webIdDetected = match === 'lfeeder' || match === 'leadfeeder' ? 'leadfeeder' : match;
         break;
       }
     }
