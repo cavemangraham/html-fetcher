@@ -62,7 +62,6 @@ exports.handler = async function (event, context) {
       'crisp',
       'intercom',
       'tawk',
-      'hs-scripts',
       '@n8n/chat',
       'hubspotconversations'
     ];
