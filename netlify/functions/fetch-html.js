@@ -15,9 +15,9 @@ exports.handler = async function (event, context) {
     const html = await res.text();
 
     // Log full <head> section
-    const headMatch = html.match(/<head[^>]*>([\\s\\S]*?)<\\/head>/i);
+    const headMatch = html.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
     const headHtml = headMatch ? headMatch[0] : 'No <head> section found';
-    console.log('HEAD SECTION:\\n', headHtml);
+    console.log('HEAD SECTION:\n', headHtml);
 
     // Extract script src URLs with regex
     const scriptRegex = /<script[^>]+src=["']([^"']+)["']/gi;
