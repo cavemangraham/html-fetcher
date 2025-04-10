@@ -19,11 +19,11 @@ exports.handler = async function (event, context) {
     const headHtml = headMatch ? headMatch[0] : 'No <head> section found';
     console.log('HEAD SECTION:\n', headHtml);
 
-    // Regex to find all <script>...</script> tags
+    // Extract inline script contents
     const scriptTagRegex = /<script[^>]*>([\s\S]*?)<\/script>/gi;
     const scriptContents = [...html.matchAll(scriptTagRegex)].map(m => m[1].toLowerCase());
 
-    // Also extract script srcs for good measure
+    // Extract script src URLs
     const srcRegex = /<script[^>]+src=["']([^"']+)["']/gi;
     const scriptSrcs = [...html.matchAll(srcRegex)].map(m => m[1].toLowerCase());
 
@@ -31,26 +31,35 @@ exports.handler = async function (event, context) {
     scriptSrcs.forEach(src => console.log('→', src));
 
     console.log('INLINE SCRIPT SNIPPETS FOUND:');
-    scriptContents.forEach((code, i) => console.log(`Script ${i + 1}:\n`, code.slice(0, 300))); // Trim long output
+    scriptContents.forEach((code, i) => console.log(`Script ${i + 1}:\n`, code.slice(0, 300)));
 
-    const keywords = ['rb2b', 'warmly', 'vector', 'lfeeder', 'leadfeeder'];
+    // Keywords and normalization map
+    const keywordMap = {
+      rb2b: 'rb2b',
+      reb2b: 'rb2b',
+      warmly: 'warmly',
+      vector: 'vector',
+      lfeeder: 'leadfeeder',
+      leadfeeder: 'leadfeeder',
+    };
+
     let webIdDetected = null;
 
     // Check inline scripts
     for (const code of scriptContents) {
-      const match = keywords.find(word => code.includes(word));
+      const match = Object.keys(keywordMap).find(word => code.includes(word));
       if (match) {
-        webIdDetected = (match === 'lfeeder' || match === 'leadfeeder') ? 'leadfeeder' : match;
+        webIdDetected = keywordMap[match];
         break;
       }
     }
 
-    // If not found in inline, check script srcs
+    // If not found in inline, check src URLs
     if (!webIdDetected) {
       for (const src of scriptSrcs) {
-        const match = keywords.find(word => src.includes(word));
+        const match = Object.keys(keywordMap).find(word => src.includes(word));
         if (match) {
-          webIdDetected = (match === 'lfeeder' || match === 'leadfeeder') ? 'leadfeeder' : match;
+          webIdDetected = keywordMap[match];
           break;
         }
       }
